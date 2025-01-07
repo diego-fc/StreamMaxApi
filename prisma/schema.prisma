@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model person {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+  taxId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  address  address[]
+  Document Document[]
+  Token    Token[]
+}
+
+model User {
+  id       String @id @default(uuid())
+  personId String
+  userName String
+  email    String @unique
+  password String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  person person @relation(fields: [personId], references: [id])
+}
+
+model address {
+  id         String @id @default(uuid())
+  personId   String
+  street     String
+  number     String
+  city       String
+  state      String
+  country    String
+  postalCode String
+  complement String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  person person @relation(fields: [personId], references: [id])
+}
+
+model Document {
+  id           String @id @default(uuid())
+  personId     String
+  document     String
+  documentType String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  person person @relation(fields: [personId], references: [id])
+}
+
+model Token {
+  id        String   @id @default(uuid())
+  personId  String
+  token     String
+  expiresAt DateTime
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  person person @relation(fields: [personId], references: [id])
+}

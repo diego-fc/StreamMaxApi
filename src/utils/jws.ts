@@ -26,4 +26,17 @@ export const verifyAccessToken = (refreshToken: string) => {
 	}
 };
 
-module.exports = { generateAccessToken, generateRefreshToken, verifyAccessToken };
+export const decodeAccessToken = (accessToken: string) => {
+	try {
+		return jwt.verify(accessToken, process.env.JWT_SECRET!) as JwtPayload;
+	} catch (err) {
+		throw new Error("Token inválido ou expirado!");
+	}
+}
+
+module.exports = {
+	generateAccessToken,
+	generateRefreshToken,
+	verifyAccessToken,
+	decodeAccessToken
+};

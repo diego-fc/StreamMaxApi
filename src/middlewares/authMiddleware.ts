@@ -1,28 +1,41 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-import { config } from "../config/env"
+import { config } from "../config/env";
+import { prisma } from "../lib/prisma";
 
-const authenticateToken = (req: Request, res: Response, next: NextFunction): any => {
+const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const authHeader = req.headers.authorization;
+    const personId = req.headers.id;
+
     if (!authHeader) {
-        // Envia a resposta sem retornar, porque middlewares devem retornar `void`
-        return res.status(401).send("Token not found!");
+        return res.status(401).send({ errorMessage: "Token not found!" });
+    } else if (!personId || Array.isArray(personId)) {
+        return res.status(400).send({ errorMessage: "Invalid or missing user ID!" });
     }
 
     const token = authHeader.split(" ")[1];
-    console.log("🚀 ~ authenticateToken ~ token:", token)
-    jwt.verify(token, config.jwtSecret!, (err: any, user: any) => {
-        console.log("🚀 ~ jwt.verify ~ err:", err)
-        if (err) {
-            // Envia a resposta sem retornar
-            return res.status(403).send("Invalid token!");
+
+    try {
+        const decodedToken = jwt.verify(token, config.jwtSecret!);
+
+        const getToken = await prisma.token.findFirst({
+            where: {
+                personId: personId,
+                token: token,
+                active: true
+            }
+        });
+
+        if (!getToken) {
+            return res.status(403).send({ errorMessage: "Invalid token!" });
         }
-        console.log("🚀 ~ jwt.verify ~ user:", user)
-        req.body.user = user; // Armazena os dados do usuário no corpo da requisição
-        // Passa para o próximo middleware
-        next();
-    });
+
+        req.body.user = decodedToken; // Armazena os dados do usuário no corpo da requisição
+        next(); // Passa para o próximo middleware
+    } catch (err) {
+        return res.status(403).send({ errorMessage: "Invalid token!" });
+    }
 };
 
 export default authenticateToken;
